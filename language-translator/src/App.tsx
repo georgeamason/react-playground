@@ -1,35 +1,63 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
+import {Fragment, useEffect, useState} from "react";
 
-function App() {
-  const [count, setCount] = useState(0)
+const translateApi = 'https://translation.googleapis.com/language/translate/v2';
+const apiKey = '';
 
-  return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+interface Translation {
+    translatedText: string;
+}
+
+const callApi = async (targetLanguage: string, translate: string) : Promise<Translation[]> => {
+    const response = await fetch(`${translateApi}?` + new URLSearchParams({
+        source: 'en',
+        target: targetLanguage,
+        key: apiKey,
+        q: translate
+    }));
+
+    if (response.ok){
+        const json = await response.json();
+        return json.data.translations;
+    }
+
+    throw response;
+}
+
+const App = () => {
+    const [targetLanguage, setTargetLanguage] = useState<string>('es');
+    const [translate, setTranslate] = useState<string>('');
+    const [translations, setTranslations] = useState<Translation[]>();
+
+    console.log('App.tsx');
+
+    useEffect(() => {
+        console.log('useEffect');
+        void (async () => {
+            const x = await callApi(targetLanguage, translate);
+            setTranslations(x);
+        })();
+    }, [translate, targetLanguage]);
+
+    return (
+        <Fragment>
+            <input type="text" onChange={event => {
+                setTranslate(() => event.target.value);
+            }}/>
+            <hr/>
+            <div>
+                <button onClick={() => setTargetLanguage('es')}>Spanish</button>
+                <button onClick={() => setTargetLanguage('fr')}>French</button>
+                <button onClick={() => setTargetLanguage('de')}>German</button>
+                <button onClick={() => setTargetLanguage('pt')}>Portuguese</button>
+                <button onClick={() => setTargetLanguage('it')}>Italian</button>
+            </div>
+            <hr/>
+            {translations?.map(translation => {
+                return <p key={translation.translatedText}>{translation.translatedText}</p>
+            })}
+        </Fragment>
+    )
 }
 
 export default App
