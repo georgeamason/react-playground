@@ -1,14 +1,21 @@
 import './App.css'
 import {Fragment, useEffect, useState} from "react";
+import {z} from 'zod';
 
 const translateApi = 'https://translation.googleapis.com/language/translate/v2';
-const apiKey = '';
+const apiKey = 'AIzaSyAA6KdT58v4QhA8ODUH-86z99Renn__GXA';
 
-interface Translation {
-    translatedText: string;
-}
+const ZTranslate = z.object({
+    data: z.object({
+        translations: z.array(z.object({
+            detectedSourceLanguage: z.string().optional(),
+            model: z.string().optional(),
+            translatedText: z.string()
+        }))
+    })
+})
 
-const callApi = async (targetLanguage: string, translate: string) : Promise<Translation[]> => {
+const callApi = async (targetLanguage: string, translate: string) => {
     const response = await fetch(`${translateApi}?` + new URLSearchParams({
         source: 'en',
         target: targetLanguage,
@@ -18,7 +25,8 @@ const callApi = async (targetLanguage: string, translate: string) : Promise<Tran
 
     if (response.ok){
         const json = await response.json();
-        return json.data.translations;
+        console.log(json);
+        return ZTranslate.parse(json);
     }
 
     throw response;
@@ -27,7 +35,7 @@ const callApi = async (targetLanguage: string, translate: string) : Promise<Tran
 const App = () => {
     const [targetLanguage, setTargetLanguage] = useState<string>('es');
     const [translate, setTranslate] = useState<string>('');
-    const [translations, setTranslations] = useState<Translation[]>();
+    const [translations, setTranslations] = useState<z.infer<typeof ZTranslate>>();
 
     console.log('App.tsx');
 
@@ -53,7 +61,7 @@ const App = () => {
                 <button onClick={() => setTargetLanguage('it')}>Italian</button>
             </div>
             <hr/>
-            {translations?.map(translation => {
+            {translations?.data?.translations?.map(translation => {
                 return <p key={translation.translatedText}>{translation.translatedText}</p>
             })}
         </Fragment>
